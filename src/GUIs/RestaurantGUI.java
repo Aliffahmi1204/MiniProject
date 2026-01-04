@@ -228,7 +228,7 @@ private void initUI() {
             StockItem item = db.getStockItems().get(row);
             item.reduceStock(amount);
             db.updateStockQuantity(item.getId(), item.getQuantity());
-            db.addTransaction(item.getSupplier().getId(), item.getId(), -amount);
+            db.addTransaction(item.getSupplier().getId(), item.getId(),  -amount);
             loadStock();
         } catch (OutOfStockEx e) {
             JOptionPane.showMessageDialog(this, e.getMessage());
@@ -283,14 +283,15 @@ private void showTransactions() {
     try {
         List<Transaction> transactions = db.geTransactions();
 
-        String[] columns = {"Supplier", "Item", "Number"};
-        Object[][] data = new Object[transactions.size()][3];
+        String[] columns = {"Supplier", "Item", "Category", "Number"};
+        Object[][] data = new Object[transactions.size()][4];
 
         for (int i = 0; i < transactions.size(); i++) {
             Transaction t = transactions.get(i);
             data[i][0] = t.getSupplier().getName();
             data[i][1] = t.getItem().getName();
-            data[i][2] = t.getNumber();
+            data[i][2] = t.getItem().getCategory();
+            data[i][3] = t.getNumber();
         }
 
 

@@ -64,22 +64,15 @@ public class Database {
     private void loadStock() throws SQLException {
         stockItems.clear();
         try (Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT id, name, quantity, category, supplier_id FROM stock")) {
+             ResultSet rs = stmt.executeQuery("SELECT id, name, quantity, category FROM stock")) {
             while (rs.next()) {
-                int supplierId = rs.getInt("supplier_id");
-                Supplier supplier = suppliers.stream()
-                        .filter(s -> s.getId() == supplierId)
-                        .findFirst()
-                        .orElse(null);
-                if (supplier != null) {
-                    stockItems.add(new StockItem(
+                stockItems.add(new StockItem(
                             rs.getInt("id"),
                             rs.getString("name"),
                             rs.getInt("quantity"),
                             rs.getString("category"),
-                            supplier
-                    ));
-                }
+                            null
+                ));
             }
         }
     }
@@ -100,6 +93,7 @@ public class Database {
                         .findFirst()
                         .orElse(null);
                 if (supplier != null && stock != null) {
+                    stock.setSupplier(supplier);
                     transactions.add(new Transaction(supplier, stock, rs.getInt(3)));
                 }
             }
@@ -111,13 +105,12 @@ public class Database {
             throw new SQLException("Supplier cannot be null");
         }
         try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO stock (name, quantity, category, supplier_id) VALUES (?, ?, ?, ?)",
+                "INSERT INTO stock (name, quantity, category) VALUES (?, ?, ?)",
                 Statement.RETURN_GENERATED_KEYS
         )) {
             ps.setString(1, item.getName());
             ps.setInt(2, item.getQuantity());
             ps.setString(3, item.getCategory());
-            ps.setInt(4, item.getSupplier().getId());
             ps.executeUpdate();
 
             try (ResultSet keys = ps.getGeneratedKeys()) {
