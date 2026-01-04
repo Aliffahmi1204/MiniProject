@@ -21,6 +21,12 @@ public class RestaurantGUI extends JFrame {
     private DefaultTableModel model;
 
     public RestaurantGUI() {
+
+        // ===== Mature Look & Feel =====
+        try {
+            UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
+        } catch (Exception ignored) {}
+
         setTitle("Restaurant Stock System");
         setSize(900, 500);
         setLocationRelativeTo(null);
@@ -38,49 +44,100 @@ public class RestaurantGUI extends JFrame {
             Connection conn = db.connect();
             db.loadAll();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Database Error: " + e.getMessage());
+            JOptionPane.showMessageDialog(this,
+                    "Database Error:\n" + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
             System.exit(0);
         }
     }
 
-private void initUI() {
-    setLayout(new BorderLayout());
+    private void initUI() {
+        setLayout(new BorderLayout());
 
-    model = new DefaultTableModel(
-            new String[]{"ID", "Item", "Qty", "Category", "Supplier"}, 0
-    );
-    stockTable = new JTable(model);
-    loadStock();
+        // ===== Header (Professional) =====
+        JLabel title = new JLabel("Restaurant Stock Management");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        title.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
 
-    add(new JScrollPane(stockTable), BorderLayout.CENTER);
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(new Color(240, 242, 245));
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(200, 200, 200)));
+        header.add(title, BorderLayout.WEST);
 
-    JPanel panel = new JPanel();
+        add(header, BorderLayout.NORTH);
 
-    JButton addnewBtn = new JButton("Add New Stock");
-    JButton addBtn = new JButton("Add Stock");
-    JButton reduceBtn = new JButton("Reduce Stock");
-    JButton deleteBtn = new JButton("Delete Stock");
-    JButton refreshBtn = new JButton("Refresh");
-    JButton transactionBtn = new JButton("Transactions"); 
+        // ===== Table =====
+        model = new DefaultTableModel(
+                new String[]{"ID", "Item", "Qty", "Category", "Supplier"}, 0
+        );
 
-    panel.add(addnewBtn);
-    panel.add(addBtn);
-    panel.add(reduceBtn);
-    panel.add(deleteBtn);
-    panel.add(refreshBtn);
-    panel.add(transactionBtn); 
+        stockTable = new JTable(model);
+        styleTable(stockTable);
+        loadStock();
 
-    add(panel, BorderLayout.SOUTH);
+        add(new JScrollPane(stockTable), BorderLayout.CENTER);
 
-    addnewBtn.addActionListener(e -> addNewStock());
-    addBtn.addActionListener(e -> addStock());
-    reduceBtn.addActionListener(e -> reduceStock());
-    deleteBtn.addActionListener(e -> deleteStock());
-    refreshBtn.addActionListener(e -> loadStock());
-    transactionBtn.addActionListener(e -> showTransactions()); 
-}
+        // ===== Footer Buttons =====
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 10));
+        panel.setBackground(new Color(240, 242, 245));
+
+        JButton addnewBtn = createButton("Add New Stock");
+        JButton addBtn = createButton("Add Stock");
+        JButton reduceBtn = createButton("Reduce Stock");
+        JButton deleteBtn = createButton("Delete Stock");
+        JButton refreshBtn = createButton("Refresh");
+        JButton transactionBtn = createButton("Transactions");
+
+        panel.add(addnewBtn);
+        panel.add(addBtn);
+        panel.add(reduceBtn);
+        panel.add(deleteBtn);
+        panel.add(refreshBtn);
+        panel.add(transactionBtn);
+
+        add(panel, BorderLayout.SOUTH);
+
+        addnewBtn.addActionListener(e -> addNewStock());
+        addBtn.addActionListener(e -> addStock());
+        reduceBtn.addActionListener(e -> reduceStock());
+        deleteBtn.addActionListener(e -> deleteStock());
+        refreshBtn.addActionListener(e -> loadStock());
+        transactionBtn.addActionListener(e -> showTransactions());
+    }
+
+    // ===== UI Helpers (ONLY visual) =====
+    private void styleTable(JTable table) {
+        table.setRowHeight(26);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+        table.setSelectionBackground(new Color(220, 230, 245));
+        table.setSelectionForeground(Color.BLACK);
+        table.setShowGrid(false);
+        table.setIntercellSpacing(new Dimension(0, 0));
+    }
+
+    private JButton createButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        btn.setFocusPainted(false);
+        btn.setBackground(Color.WHITE);
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(180, 180, 180)),
+                BorderFactory.createEmptyBorder(6, 14, 6, 14)
+        ));
+        return btn;
+    }
+
+    // =========================
+    // ===== ORIGINAL LOGIC =====
+    // =========================
 
     private void loadStock() {
+        try {
+            db.loadAll();
+        } catch (Exception e) {
+            e.notify();
+        }
         model.setRowCount(0);
         for (StockItem s : db.getStockItems()) {
             model.addRow(new Object[]{
@@ -94,7 +151,6 @@ private void initUI() {
     }
 
     private void addNewStock() {
-
         List<Supplier> suppliers = db.getSuppliers();
         JComboBox<String> supCombo = new JComboBox<>(
                 suppliers.stream().map(Supplier::getName).toArray(String[]::new)
@@ -102,16 +158,14 @@ private void initUI() {
         String ADD_SUPPLIER_OPTION = "+ Add New Supplier";
         supCombo.addItem(ADD_SUPPLIER_OPTION);
 
-      
         JPanel supplierPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         supplierPanel.add(supCombo);
 
-        JButton infoBtn = new JButton("Info");
-        JButton deleteBtn = new JButton("Delete");
+        JButton infoBtn = createButton("Info");
+        JButton deleteBtn = createButton("Delete");
         supplierPanel.add(infoBtn);
         supplierPanel.add(deleteBtn);
 
-     
         infoBtn.addActionListener(e -> {
             String selected = (String) supCombo.getSelectedItem();
             if (selected != null && !selected.equals(ADD_SUPPLIER_OPTION)) {
@@ -127,12 +181,12 @@ private void initUI() {
             }
         });
 
-        // Delete button action
         deleteBtn.addActionListener(e -> {
             String selected = (String) supCombo.getSelectedItem();
             if (selected != null && !selected.equals(ADD_SUPPLIER_OPTION)) {
                 int confirm = JOptionPane.showConfirmDialog(this,
-                        "Delete supplier '" + selected + "'?", "Confirm", JOptionPane.YES_NO_OPTION);
+                        "Delete supplier '" + selected + "'?",
+                        "Confirm", JOptionPane.YES_NO_OPTION);
                 if (confirm == JOptionPane.YES_OPTION) {
                     try {
                         Supplier sup = db.getSuppliers().stream()
@@ -144,13 +198,14 @@ private void initUI() {
                             supCombo.removeItem(selected);
                         }
                     } catch (Exception ex) {
-                        JOptionPane.showMessageDialog(this, "Error deleting supplier: " + ex.getMessage());
+                        JOptionPane.showMessageDialog(this,
+                                "Error deleting supplier: " + ex.getMessage(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
             }
         });
 
-        // Add new supplier option
         supCombo.addActionListener(e -> {
             if (((String) supCombo.getSelectedItem()).equals(ADD_SUPPLIER_OPTION)) {
                 String newSupplier = addNewSupplier();
@@ -174,7 +229,9 @@ private void initUI() {
                 "Supplier:", supplierPanel
         };
 
-        int option = JOptionPane.showConfirmDialog(this, input, "Add New Stock", JOptionPane.OK_CANCEL_OPTION);
+        int option = JOptionPane.showConfirmDialog(this, input,
+                "Add New Stock", JOptionPane.OK_CANCEL_OPTION);
+
         if (option == JOptionPane.OK_OPTION) {
             try {
                 int quantity = Integer.parseInt(qty.getText());
@@ -183,15 +240,24 @@ private void initUI() {
                         .findFirst()
                         .orElse(null);
 
-                StockItem item = new StockItem(0, name.getText(), quantity, (String) cat.getSelectedItem(), selectedSupplier);
+                StockItem item = new StockItem(0, name.getText(),
+                        quantity, (String) cat.getSelectedItem(), selectedSupplier);
+                        
+                boolean itemExists = db.getStockItems().stream()
+                    .anyMatch(e -> e.getName().equals(name.getText()) && e.getSupplier().equals(selectedSupplier));
+
+                if (itemExists) {
+                    JOptionPane.showMessageDialog(rootPane, "There's already an item with this name and supplier");
+                    return;
+                }
                 db.insertStock(item);
-            
                 loadStock();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+                JOptionPane.showMessageDialog(this,
+                        "Error: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
-
     }
 
     private void addStock() {
@@ -231,13 +297,13 @@ private void initUI() {
             StockItem item = db.getStockItems().get(row);
             item.reduceStock(amount);
             db.updateStockQuantity(item.getId(), item.getQuantity());
-            db.addTransaction(item.getSupplier().getId(), item.getId(),  -amount);
+            db.addTransaction(item.getSupplier().getId(), item.getId(), -amount);
             loadStock();
         } catch (OutOfStockEx e) {
             JOptionPane.showMessageDialog(this, e.getMessage());
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
-        } 
+        }
     }
 
     private void deleteStock() {
@@ -247,14 +313,19 @@ private void initUI() {
             return;
         }
 
-        int confirm = JOptionPane.showConfirmDialog(this, "Delete selected stock?", "Confirm", JOptionPane.YES_NO_OPTION);
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Delete selected stock?",
+                "Confirm", JOptionPane.YES_NO_OPTION);
+
         if (confirm == JOptionPane.YES_OPTION) {
             try {
                 StockItem item = db.getStockItems().get(row);
                 db.deleteStock(item.getId());
                 loadStock();
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+                JOptionPane.showMessageDialog(this,
+                        "Error: " + e.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -264,124 +335,128 @@ private void initUI() {
         JTextField phone = new JTextField();
 
         Object[] input = {
-            "Supplier Name:", name,
-            "Phone:", phone,
+                "Supplier Name:", name,
+                "Phone:", phone,
         };
 
-        int option = JOptionPane.showConfirmDialog(this, input, "Add Supplier", JOptionPane.OK_CANCEL_OPTION);
+        int option = JOptionPane.showConfirmDialog(this,
+                input, "Add Supplier", JOptionPane.OK_CANCEL_OPTION);
+
         if (option == JOptionPane.OK_OPTION) {
             try {
-                Supplier newSupplier = new Supplier(0, name.getText(), phone.getText());
+                Supplier newSupplier = new Supplier(0,
+                        name.getText(), phone.getText());
                 db.insertSupplier(newSupplier);
-                JOptionPane.showMessageDialog(this, "Supplier added successfully!");
+                JOptionPane.showMessageDialog(this,
+                        "Supplier added successfully!");
                 return newSupplier.getName();
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "Error adding supplier: " + e.getMessage());
+                JOptionPane.showMessageDialog(this,
+                        "Error adding supplier: " + e.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
         return null;
     }
 
-private void showTransactions() {
-    try {
-        List<Transaction> transactions = db.getTransactions(); // ✅ fix typo: geTransactions → getTransactions
+    private void showTransactions() {
+        try {
+            List<Transaction> transactions = db.getTransactions();
 
-        String[] columns = {"Supplier", "Item", "Category", "Number"};
-        DefaultTableModel tableModel = new DefaultTableModel(columns, 0);
-        JTable table = new JTable(tableModel);
-        JScrollPane scrollPane = new JScrollPane(table);
-
-        // Fill table initially
-        for (Transaction t : transactions) {
-            tableModel.addRow(new Object[]{
-                t.getSupplier().getName(),
-                t.getItem().getName(),
-                t.getItem().getCategory(),
-                t.getNumber()
-            });
-        }
-
-        // Build filter panel (bottom right)
-        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-
-        // Supplier filter
-        Set<String> supplierNames = new HashSet<>();
-        for (Transaction t : transactions) supplierNames.add(t.getSupplier().getName());
-        JComboBox<String> supplierBox = new JComboBox<>(supplierNames.toArray(new String[0]));
-        supplierBox.insertItemAt("All", 0);
-        supplierBox.setSelectedIndex(0);
-
-        // Category filter
-        Set<String> categories = new HashSet<>();
-        for (Transaction t : transactions) categories.add(t.getItem().getCategory());
-        JComboBox<String> categoryBox = new JComboBox<>(categories.toArray(new String[0]));
-        categoryBox.insertItemAt("All", 0);
-        categoryBox.setSelectedIndex(0);
-
-        // Item filter
-        Set<String> itemNames = new HashSet<>();
-        for (Transaction t : transactions) itemNames.add(t.getItem().getName());
-        JComboBox<String> itemBox = new JComboBox<>(itemNames.toArray(new String[0]));
-        itemBox.insertItemAt("All", 0);
-        itemBox.setSelectedIndex(0);
-
-        // Reset button
-        JButton resetBtn = new JButton("Reset");
-
-        filterPanel.add(new JLabel("Supplier:"));
-        filterPanel.add(supplierBox);
-        filterPanel.add(new JLabel("Category:"));
-        filterPanel.add(categoryBox);
-        filterPanel.add(new JLabel("Item:"));
-        filterPanel.add(itemBox);
-        filterPanel.add(resetBtn);
-
-        // Frame setup
-        JFrame frame = new JFrame("Supplier Transactions");
-        frame.setSize(700, 400);
-        frame.setLocationRelativeTo(null);
-        frame.setLayout(new BorderLayout());
-        frame.add(scrollPane, BorderLayout.CENTER);
-        frame.add(filterPanel, BorderLayout.SOUTH);
-        frame.setVisible(true);
-
-        // Filtering logic
-        ActionListener filterAction = e -> {
-            tableModel.setRowCount(0); // clear table
-            String selectedSupplier = (String) supplierBox.getSelectedItem();
-            String selectedCategory = (String) categoryBox.getSelectedItem();
-            String selectedItem = (String) itemBox.getSelectedItem();
+            String[] columns = {"Supplier", "Item", "Category", "Number"};
+            DefaultTableModel tableModel = new DefaultTableModel(columns, 0);
+            JTable table = new JTable(tableModel);
+            styleTable(table);
+            JScrollPane scrollPane = new JScrollPane(table);
 
             for (Transaction t : transactions) {
-                boolean matchSupplier = "All".equals(selectedSupplier) || t.getSupplier().getName().equals(selectedSupplier);
-                boolean matchCategory = "All".equals(selectedCategory) || t.getItem().getCategory().equals(selectedCategory);
-                boolean matchItem = "All".equals(selectedItem) || t.getItem().getName().equals(selectedItem);
-
-                if (matchSupplier && matchCategory && matchItem) {
-                    tableModel.addRow(new Object[]{
+                tableModel.addRow(new Object[]{
                         t.getSupplier().getName(),
                         t.getItem().getName(),
                         t.getItem().getCategory(),
                         t.getNumber()
-                    });
-                }
+                });
             }
-        };
 
-        supplierBox.addActionListener(filterAction);
-        categoryBox.addActionListener(filterAction);
-        itemBox.addActionListener(filterAction);
+            JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+            filterPanel.setBackground(new Color(240, 242, 245));
 
-        resetBtn.addActionListener(e -> {
+            Set<String> supplierNames = new HashSet<>();
+            for (Transaction t : transactions) supplierNames.add(t.getSupplier().getName());
+            JComboBox<String> supplierBox = new JComboBox<>(supplierNames.toArray(new String[0]));
+            supplierBox.insertItemAt("All", 0);
             supplierBox.setSelectedIndex(0);
+
+            Set<String> categories = new HashSet<>();
+            for (Transaction t : transactions) categories.add(t.getItem().getCategory());
+            JComboBox<String> categoryBox = new JComboBox<>(categories.toArray(new String[0]));
+            categoryBox.insertItemAt("All", 0);
             categoryBox.setSelectedIndex(0);
+
+            Set<String> itemNames = new HashSet<>();
+            for (Transaction t : transactions) itemNames.add(t.getItem().getName());
+            JComboBox<String> itemBox = new JComboBox<>(itemNames.toArray(new String[0]));
+            itemBox.insertItemAt("All", 0);
             itemBox.setSelectedIndex(0);
-            filterAction.actionPerformed(null); // reload all
-        });
 
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(null, "Error loading transactions: " + e.getMessage());
+            JButton resetBtn = createButton("Reset");
+
+            filterPanel.add(new JLabel("Supplier:"));
+            filterPanel.add(supplierBox);
+            filterPanel.add(new JLabel("Category:"));
+            filterPanel.add(categoryBox);
+            filterPanel.add(new JLabel("Item:"));
+            filterPanel.add(itemBox);
+            filterPanel.add(resetBtn);
+
+            JFrame frame = new JFrame("Supplier Transactions");
+            frame.setSize(700, 400);
+            frame.setLocationRelativeTo(null);
+            frame.setLayout(new BorderLayout());
+            frame.add(scrollPane, BorderLayout.CENTER);
+            frame.add(filterPanel, BorderLayout.SOUTH);
+            frame.setVisible(true);
+
+            ActionListener filterAction = e -> {
+                tableModel.setRowCount(0);
+                String selectedSupplier = (String) supplierBox.getSelectedItem();
+                String selectedCategory = (String) categoryBox.getSelectedItem();
+                String selectedItem = (String) itemBox.getSelectedItem();
+
+                for (Transaction t : transactions) {
+                    boolean matchSupplier = "All".equals(selectedSupplier)
+                            || t.getSupplier().getName().equals(selectedSupplier);
+                    boolean matchCategory = "All".equals(selectedCategory)
+                            || t.getItem().getCategory().equals(selectedCategory);
+                    boolean matchItem = "All".equals(selectedItem)
+                            || t.getItem().getName().equals(selectedItem);
+
+                    if (matchSupplier && matchCategory && matchItem) {
+                        tableModel.addRow(new Object[]{
+                                t.getSupplier().getName(),
+                                t.getItem().getName(),
+                                t.getItem().getCategory(),
+                                t.getNumber()
+                        });
+                    }
+                }
+            };
+
+            supplierBox.addActionListener(filterAction);
+            categoryBox.addActionListener(filterAction);
+            itemBox.addActionListener(filterAction);
+
+            resetBtn.addActionListener(e -> {
+                supplierBox.setSelectedIndex(0);
+                categoryBox.setSelectedIndex(0);
+                itemBox.setSelectedIndex(0);
+                filterAction.actionPerformed(null);
+            });
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null,
+                    "Error loading transactions: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
-}
-
 }
