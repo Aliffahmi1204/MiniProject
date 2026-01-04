@@ -6,8 +6,11 @@ import Entities.Supplier;
 import Entities.Transaction;
 import Exceptions.OutOfStockEx;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.sql.Connection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
@@ -233,8 +236,8 @@ private void initUI() {
         } catch (OutOfStockEx e) {
             JOptionPane.showMessageDialog(this, e.getMessage());
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Invalid input");
-        }
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+        } 
     }
 
     private void deleteStock() {
@@ -281,31 +284,103 @@ private void initUI() {
 
 private void showTransactions() {
     try {
-        List<Transaction> transactions = db.geTransactions();
+        List<Transaction> transactions = db.getTransactions(); // ✅ fix typo: geTransactions → getTransactions
 
         String[] columns = {"Supplier", "Item", "Category", "Number"};
-        Object[][] data = new Object[transactions.size()][4];
-
-        for (int i = 0; i < transactions.size(); i++) {
-            Transaction t = transactions.get(i);
-            data[i][0] = t.getSupplier().getName();
-            data[i][1] = t.getItem().getName();
-            data[i][2] = t.getItem().getCategory();
-            data[i][3] = t.getNumber();
-        }
-
-
-        JTable table = new JTable(data, columns);
+        DefaultTableModel tableModel = new DefaultTableModel(columns, 0);
+        JTable table = new JTable(tableModel);
         JScrollPane scrollPane = new JScrollPane(table);
 
+        // Fill table initially
+        for (Transaction t : transactions) {
+            tableModel.addRow(new Object[]{
+                t.getSupplier().getName(),
+                t.getItem().getName(),
+                t.getItem().getCategory(),
+                t.getNumber()
+            });
+        }
+
+        // Build filter panel (bottom right)
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+
+        // Supplier filter
+        Set<String> supplierNames = new HashSet<>();
+        for (Transaction t : transactions) supplierNames.add(t.getSupplier().getName());
+        JComboBox<String> supplierBox = new JComboBox<>(supplierNames.toArray(new String[0]));
+        supplierBox.insertItemAt("All", 0);
+        supplierBox.setSelectedIndex(0);
+
+        // Category filter
+        Set<String> categories = new HashSet<>();
+        for (Transaction t : transactions) categories.add(t.getItem().getCategory());
+        JComboBox<String> categoryBox = new JComboBox<>(categories.toArray(new String[0]));
+        categoryBox.insertItemAt("All", 0);
+        categoryBox.setSelectedIndex(0);
+
+        // Item filter
+        Set<String> itemNames = new HashSet<>();
+        for (Transaction t : transactions) itemNames.add(t.getItem().getName());
+        JComboBox<String> itemBox = new JComboBox<>(itemNames.toArray(new String[0]));
+        itemBox.insertItemAt("All", 0);
+        itemBox.setSelectedIndex(0);
+
+        // Reset button
+        JButton resetBtn = new JButton("Reset");
+
+        filterPanel.add(new JLabel("Supplier:"));
+        filterPanel.add(supplierBox);
+        filterPanel.add(new JLabel("Category:"));
+        filterPanel.add(categoryBox);
+        filterPanel.add(new JLabel("Item:"));
+        filterPanel.add(itemBox);
+        filterPanel.add(resetBtn);
+
+        // Frame setup
         JFrame frame = new JFrame("Supplier Transactions");
-        frame.setSize(500, 300);
-        frame.setLocationRelativeTo(this);
-        frame.add(scrollPane);
+        frame.setSize(700, 400);
+        frame.setLocationRelativeTo(null);
+        frame.setLayout(new BorderLayout());
+        frame.add(scrollPane, BorderLayout.CENTER);
+        frame.add(filterPanel, BorderLayout.SOUTH);
         frame.setVisible(true);
 
+        // Filtering logic
+        ActionListener filterAction = e -> {
+            tableModel.setRowCount(0); // clear table
+            String selectedSupplier = (String) supplierBox.getSelectedItem();
+            String selectedCategory = (String) categoryBox.getSelectedItem();
+            String selectedItem = (String) itemBox.getSelectedItem();
+
+            for (Transaction t : transactions) {
+                boolean matchSupplier = "All".equals(selectedSupplier) || t.getSupplier().getName().equals(selectedSupplier);
+                boolean matchCategory = "All".equals(selectedCategory) || t.getItem().getCategory().equals(selectedCategory);
+                boolean matchItem = "All".equals(selectedItem) || t.getItem().getName().equals(selectedItem);
+
+                if (matchSupplier && matchCategory && matchItem) {
+                    tableModel.addRow(new Object[]{
+                        t.getSupplier().getName(),
+                        t.getItem().getName(),
+                        t.getItem().getCategory(),
+                        t.getNumber()
+                    });
+                }
+            }
+        };
+
+        supplierBox.addActionListener(filterAction);
+        categoryBox.addActionListener(filterAction);
+        itemBox.addActionListener(filterAction);
+
+        resetBtn.addActionListener(e -> {
+            supplierBox.setSelectedIndex(0);
+            categoryBox.setSelectedIndex(0);
+            itemBox.setSelectedIndex(0);
+            filterAction.actionPerformed(null); // reload all
+        });
+
     } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "Error loading transactions: " + e.getMessage());
+        JOptionPane.showMessageDialog(null, "Error loading transactions: " + e.getMessage());
     }
 }
 

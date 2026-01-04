@@ -82,8 +82,8 @@ public class Database {
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT * FROM transaction")) {
             while (rs.next()) {
-                int supplierId = rs.getInt(1);
-                int stockid = rs.getInt(2);
+                int supplierId = rs.getInt(2);
+                int stockid = rs.getInt(3);
                 Supplier supplier = suppliers.stream()
                         .filter(s -> s.getId() == supplierId)
                         .findFirst()
@@ -94,7 +94,7 @@ public class Database {
                         .orElse(null);
                 if (supplier != null && stock != null) {
                     stock.setSupplier(supplier);
-                    transactions.add(new Transaction(supplier, stock, rs.getInt(3)));
+                    transactions.add(new Transaction(supplier, stock, rs.getInt(4)));
                 }
             }
         }
@@ -143,6 +143,8 @@ public class Database {
     }
 
     public void deleteStock(int id) throws SQLException {
+        deleteTransactions(id);
+
         try (PreparedStatement ps = conn.prepareStatement(
                 "DELETE FROM stock WHERE id = ?")) {
             ps.setInt(1, id);
@@ -158,6 +160,15 @@ public class Database {
             ps.executeUpdate();
         }
         suppliers.removeIf(s -> s.getId() == id);
+    }
+
+    public void deleteTransactions(int id) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "DELETE FROM transaction WHERE stockId = ?")) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
+        transactions.removeIf(s -> s.getItem().getId() == id);
     }
 
 
@@ -191,7 +202,7 @@ public class Database {
         return suppliers;
     }
 
-    public List<Transaction> geTransactions() {
+    public List<Transaction> getTransactions() {
         return transactions;
     }
 
