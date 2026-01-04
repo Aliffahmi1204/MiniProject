@@ -22,7 +22,6 @@ public class RestaurantGUI extends JFrame {
 
     public RestaurantGUI() {
 
-        // ===== Mature Look & Feel =====
         try {
             UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
         } catch (Exception ignored) {}
@@ -54,7 +53,6 @@ public class RestaurantGUI extends JFrame {
     private void initUI() {
         setLayout(new BorderLayout());
 
-        // ===== Header (Professional) =====
         JLabel title = new JLabel("Restaurant Stock Management");
         title.setFont(new Font("Segoe UI", Font.BOLD, 18));
         title.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
@@ -66,7 +64,6 @@ public class RestaurantGUI extends JFrame {
 
         add(header, BorderLayout.NORTH);
 
-        // ===== Table =====
         model = new DefaultTableModel(
                 new String[]{"ID", "Item", "Qty", "Category", "Supplier"}, 0
         );
@@ -77,7 +74,6 @@ public class RestaurantGUI extends JFrame {
 
         add(new JScrollPane(stockTable), BorderLayout.CENTER);
 
-        // ===== Footer Buttons =====
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 10));
         panel.setBackground(new Color(240, 242, 245));
 
@@ -105,7 +101,6 @@ public class RestaurantGUI extends JFrame {
         transactionBtn.addActionListener(e -> showTransactions());
     }
 
-    // ===== UI Helpers (ONLY visual) =====
     private void styleTable(JTable table) {
         table.setRowHeight(26);
         table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -127,10 +122,6 @@ public class RestaurantGUI extends JFrame {
         ));
         return btn;
     }
-
-    // =========================
-    // ===== ORIGINAL LOGIC =====
-    // =========================
 
     private void loadStock() {
         try {

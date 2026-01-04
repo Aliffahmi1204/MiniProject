@@ -5,7 +5,6 @@ public class Transaction {
     private StockItem item;
     private int number;
 
-    // constructor + getters
     public Transaction(Supplier supplier, StockItem item, int number) {
         this.supplier = supplier;
         this.item = item;
