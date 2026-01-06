@@ -4,6 +4,7 @@ import Data.Database;
 import Entities.StockItem;
 import Entities.Supplier;
 import Entities.Transaction;
+import Entities.UserRole;
 import Exceptions.OutOfStockEx;
 import java.awt.*;
 import java.awt.event.ActionListener;
@@ -19,27 +20,39 @@ public class RestaurantGUI extends JFrame {
     private Database db;
     private JTable stockTable;
     private DefaultTableModel model;
+    private UserRole userRole;
 
-    public RestaurantGUI() {
+    // BUTTONS (need access control)
+    private JButton addnewBtn;
+    private JButton addBtn;
+    private JButton reduceBtn;
+    private JButton deleteBtn;
+    private JButton refreshBtn;
+    private JButton transactionBtn;
+
+    public RestaurantGUI(UserRole role, Database db) {
+
+        this.userRole = role;
+        this.db = db;
 
         try {
             UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
         } catch (Exception ignored) {}
 
-        setTitle("Restaurant Stock System");
+        setTitle("Restaurant Stock System - " + role);
         setSize(900, 500);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
         initDatabase();
         initUI();
+        applyRoleAccess();
 
         setVisible(true);
     }
 
     private void initDatabase() {
         try {
-            db = new Database();
             Connection conn = db.connect();
             db.loadAll();
         } catch (Exception e) {
@@ -77,12 +90,12 @@ public class RestaurantGUI extends JFrame {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 10));
         panel.setBackground(new Color(240, 242, 245));
 
-        JButton addnewBtn = createButton("Add New Stock");
-        JButton addBtn = createButton("Add Stock");
-        JButton reduceBtn = createButton("Reduce Stock");
-        JButton deleteBtn = createButton("Delete Stock");
-        JButton refreshBtn = createButton("Refresh");
-        JButton transactionBtn = createButton("Transactions");
+        addnewBtn = createButton("Add New Stock");
+        addBtn = createButton("Add Stock");
+        reduceBtn = createButton("Reduce Stock");
+        deleteBtn = createButton("Delete Stock");
+        refreshBtn = createButton("Refresh");
+        transactionBtn = createButton("Transactions");
 
         panel.add(addnewBtn);
         panel.add(addBtn);
@@ -99,6 +112,16 @@ public class RestaurantGUI extends JFrame {
         deleteBtn.addActionListener(e -> deleteStock());
         refreshBtn.addActionListener(e -> loadStock());
         transactionBtn.addActionListener(e -> showTransactions());
+    }
+
+    // 🔐 ROLE CONTROL
+    private void applyRoleAccess() {
+
+        addnewBtn.setEnabled(userRole.canAddNewStock());
+        addBtn.setEnabled(userRole.canAddStock());
+        reduceBtn.setEnabled(userRole.canReduceStock());
+        deleteBtn.setEnabled(userRole.canDeleteStock());
+        transactionBtn.setEnabled(userRole.canViewTransactions());
     }
 
     private void styleTable(JTable table) {
@@ -126,9 +149,7 @@ public class RestaurantGUI extends JFrame {
     private void loadStock() {
         try {
             db.loadAll();
-        } catch (Exception e) {
-            e.notify();
-        }
+        } catch (Exception ignored) {}
         model.setRowCount(0);
         for (StockItem s : db.getStockItems()) {
             model.addRow(new Object[]{
@@ -264,7 +285,7 @@ public class RestaurantGUI extends JFrame {
         try {
             int amount = Integer.parseInt(input);
             StockItem item = db.getStockItems().get(row);
-            item.setQuantity(item.getQuantity() + amount);
+            item.addQuantity(amount);;
             db.updateStockQuantity(item.getId(), item.getQuantity());
             db.addTransaction(item.getSupplier().getId(), item.getId(), amount);
             loadStock();

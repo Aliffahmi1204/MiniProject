@@ -11,6 +11,8 @@ public class Database {
     private final List<StockItem> stockItems = new ArrayList<>();
     private final List<Supplier> suppliers = new ArrayList<>();
     private final List<Transaction> transactions = new ArrayList<>();
+    private final List<Staff> staffMembers = new ArrayList<>();
+    private final List<Admin> admins = new ArrayList<>();
 
     private static final String URL = "jdbc:mysql://localhost:3306/miniproject?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
     private static final String USER = "root";
@@ -41,6 +43,7 @@ public class Database {
     }
 
     public void loadAll() throws Exception {
+        loadUsers();
         loadSuppliers();
         loadStock();
         loadTransactions();
@@ -96,6 +99,29 @@ public class Database {
                     stock.setSupplier(supplier);
                     transactions.add(new Transaction(supplier, stock, rs.getInt(4)));
                 }
+            }
+        }
+    }
+
+    private void loadUsers() throws SQLException {
+        admins.clear();
+        staffMembers.clear();
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM `user` WHERE role = 'Admin'")) {
+            while (rs.next()) {
+                int id = rs.getInt(1);
+                String name = rs.getString(2);
+                String password = rs.getString(3);
+                admins.add(new Admin(id, name, password));
+            }
+        }
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM `user` WHERE role = 'Staff'")) {
+            while (rs.next()) {
+                int id = rs.getInt(1);
+                String name = rs.getString(2);
+                String password = rs.getString(3);
+                staffMembers.add(new Staff(id, name, password));
             }
         }
     }
@@ -204,6 +230,14 @@ public class Database {
 
     public List<Transaction> getTransactions() {
         return transactions;
+    }
+
+    public List<Staff> getStaffMembers() {
+        return staffMembers;
+    }
+
+    public List<Admin> getAdmins() {
+        return admins;
     }
 
 }

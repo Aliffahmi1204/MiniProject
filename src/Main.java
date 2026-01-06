@@ -1,5 +1,5 @@
 import Data.Database;
-import GUIs.RestaurantGUI;
+import GUIs.LoginGUI;
 import java.sql.Connection;
 import javax.swing.*;
 
@@ -32,7 +32,7 @@ public class Main {
                 e.printStackTrace();
             }
 
-            new RestaurantGUI();
+            new LoginGUI();
         });
     }
 
